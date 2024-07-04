@@ -13,12 +13,12 @@ import time
 DISCORD_WEBHOOK_URL = "YOUR_WEBHOOK_URL_HERE"
 KLIPPER_STATUS_URL = "http://127.0.0.1/printer/objects/query?webhooks&print_stats"
 CAMERA_SNAPSHOT_URL = "http://127.0.0.1/webcam/?action=snapshot"
-INTERVAL_SECONDS = 30  # Check status every 30 seconds - you shouldnt need to adjust this value
+INTERVAL_SECONDS = 10  # Check status every 10 seconds - you shouldn't need to adjust this value
 NOTIFICATION_INTERVAL = 10  # Progress updates every 10%, Change as needed
 THUMBNAIL_URL = "https://direct.path.to.thumbnail.png"  # URL to your thumbnail image
 ICON_URL = "https://direct.path.to.icon.png"  # URL to your icon image
 EMBED_COLOR = 12582656  # Custom yellow-green color (in Discord's decimal format)
-FOOTER_TEXT = "3D Printer Notifications" # Text shown on the footer of the embed
+FOOTER_TEXT = "3D Printer Notifications"  # Text shown on the footer of the embed
 ROTATE_ANGLE = 180  # Angle to rotate the image, adjust as needed
 ENABLE_SNAPSHOTS = True  # Enable or disable snapshots in notifications
 
@@ -155,11 +155,11 @@ def check_printer_status():
                 elapsed_time = print_duration
                 content = f"**Filename:** {current_print_filename}\n**Progress:** {progress_percentage:.2f}%\n**Elapsed:** {format_time(elapsed_time)}\n**Remaining:** {format_time(remaining_time)}\n**Current Layer:** {current_layer}/{total_layers}"
                 
-                # Send notification only at every specified progress increment
-                if progress_percentage >= last_reported_progress + NOTIFICATION_INTERVAL:
+                # Send notification for every 10% increment passed since last report
+                if int(progress_percentage) >= last_reported_progress + NOTIFICATION_INTERVAL:
                     snapshot = get_camera_snapshot() if ENABLE_SNAPSHOTS else None
                     send_discord_notification("Print Progress Update", content, snapshot)
-                    last_reported_progress = progress_percentage
+                    last_reported_progress = int(progress_percentage // NOTIFICATION_INTERVAL) * NOTIFICATION_INTERVAL
 
         elif printer_state == "complete" and last_reported_progress != 100:
             # Print completed
