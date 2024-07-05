@@ -47,7 +47,7 @@ ICON_URL = "https://direct.path.to.icon.png"
 
 Run the script using Python:
 ```python
-python discordnotify.py
+python3 discordnotify.py
 ```
 The script will start monitoring the printer status and sending notifications to the configured Discord webhook.
 
