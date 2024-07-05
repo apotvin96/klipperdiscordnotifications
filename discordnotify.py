@@ -1,5 +1,6 @@
 import aiohttp
 import asyncio
+import json
 from io import BytesIO
 from PIL import Image
 from datetime import datetime, timezone
@@ -51,7 +52,10 @@ async def get_klipper_status(session):
             response.raise_for_status()
             return await response.json()
     except aiohttp.ClientError as e:
-        print(f"Error fetching Klipper status: {e}")
+        logging.error(f"Error fetching Klipper status: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error fetching Klipper status: {e}")
         return None
 
 async def get_camera_snapshot(session):
@@ -60,7 +64,10 @@ async def get_camera_snapshot(session):
             response.raise_for_status()
             return await response.read()
     except aiohttp.ClientError as e:
-        print(f"Error fetching camera snapshot: {e}")
+        logging.error(f"Error fetching camera snapshot: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error fetching camera snapshot: {e}")
         return None
 
 def rotate_image(image_data):
@@ -71,51 +78,44 @@ def rotate_image(image_data):
         rotated_image.save(output, format='JPEG')
         return output.getvalue()
     except Exception as e:
-        print(f"Error rotating image: {e}")
+        logging.error(f"Error rotating image: {e}")
         return None
 
 async def send_discord_notification(session, title, content, image_data=None):
-    data = {
-        "embeds": [
-            {
-                "title": title,
-                "description": content,
-                "color": EMBED_COLOR,
-                "thumbnail": {
-                    "url": THUMBNAIL_URL
-                },
-                "footer": {
-                    "text": FOOTER_TEXT,
-                    "icon_url": ICON_URL
-                },
-                "timestamp": datetime.now(timezone.utc).isoformat()  # Current timestamp in ISO 8601 format
-            }
-        ]
-    }
-    headers = {
-        "Content-Type": "application/json"
+    embed = {
+        "title": title,
+        "description": content,
+        "color": EMBED_COLOR,
+        "thumbnail" : {
+            "url": THUMBNAIL_URL
+        },
+        "footer": {
+            "text": FOOTER_TEXT,
+            "icon_url": ICON_URL
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat() # Current timestamp in ISO 8601 format
     }
 
-    try:
-        if ENABLE_SNAPSHOTS and image_data:
-            rotated_image_data = rotate_image(image_data)
-            if rotated_image_data:
-                # Send the snapshot image first and get the URL
-                with aiohttp.MultipartWriter('form-data') as mpwriter:
-                    file_part = mpwriter.append(rotated_image_data)
-                    file_part.set_content_disposition('form-data', name='file', filename='snapshot.jpg')
+    if ENABLE_SNAPSHOTS and image_data:
+        rotated_image_data = rotate_image(image_data)
+        if rotated_image_data:
+            multipart_data = aiohttp.FormData()
+            multipart_data.add_field('file', rotated_image_data, filename='snapshot.jpg', content_type='image/jpeg')
+            embed["image"] = {"url": "attachment://snapshot.jpg"}
+            multipart_data.add_field('payload_json', json.dumps({
+                "embeds": [embed]
+            }), content_type='application/json')
 
-                    async with session.post(DISCORD_WEBHOOK_URL, data=mpwriter) as response:
-                        response.raise_for_status()
-                        result = await response.json()
-                        if 'attachments' in result:
-                            data['embeds'][0]['image'] = {'url': result['attachments'][0]['url']}
-                        return  # Stop here to prevent double posting
-
-        async with session.post(DISCORD_WEBHOOK_URL, headers=headers, json=data) as response:
+            async with session.post(DISCORD_WEBHOOK_URL, data=multipart_data) as response:
+                response.raise_for_status()
+                logging.info(f"Discord notification with image sent successfully: {title}")
+    else:
+        data = {
+            "embeds": [embed]
+        }
+        async with session.post(DISCORD_WEBHOOK_URL, json=data) as response:
             response.raise_for_status()
-    except aiohttp.ClientError as e:
-        print(f"Error sending Discord notification: {e}")
+            logging.info(f"Discord notification sent successfully: {title}")
 
 def calculate_progress(print_stats):
     global estimated_total_duration, total_layers, current_layer
@@ -194,10 +194,16 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["completed"] = True
             notification_flags["started"] = False
+            notification_flags["cancelled"] = False
+            notification_flags["idle"] = False
 
         elif printer_state == "cancelled" and not notification_flags["cancelled"]:
             # Print cancelled
-            content = f"{current_print_filename} cancelled."
+            elapsed_time = print_duration
+            content = (f"{current_print_filename} **cancelled!**\n"
+                       f"**Total Duration:** {print_stats.get('total_duration', 'Unknown')} seconds\n"
+                       f"**Filament Used:** {print_stats.get('filament_used', 'Unknown')} mm\n"
+                       f"**Elapsed Time:** {format_time(elapsed_time)}")
             snapshot = await get_camera_snapshot(session) if ENABLE_SNAPSHOTS else None
             await send_discord_notification(session, "Print Cancelled", content, snapshot)
             last_reported_progress = -1
@@ -206,24 +212,33 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["cancelled"] = True
             notification_flags["started"] = False
+            notification_flags["completed"] = False
+            notification_flags["idle"] = False
 
         elif printer_state == "idle" and not notification_flags["idle"]:
             # Printer idle
-            await send_discord_notification(session, "Printer Idle", "Printer is now idle.")
+            await send_discord_notification(session, "Printer Idle", "The printer is now idle.")
             last_reported_progress = -1
             estimated_total_duration = None
             total_layers = None
             current_layer = None
             notification_flags["idle"] = True
             notification_flags["started"] = False
+            notification_flags["completed"] = False
+            notification_flags["cancelled"] = False
 
     await asyncio.sleep(INTERVAL_SECONDS)
-    asyncio.create_task(check_printer_status(session))
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        task = asyncio.create_task(check_printer_status(session))
-        await task
+        while True:
+            await check_printer_status(session)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        logging.info("Keyboard interrupt detected. Exiting...")
+    finally:
+        loop.close()
