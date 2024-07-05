@@ -51,10 +51,7 @@ async def get_klipper_status(session):
             response.raise_for_status()
             return await response.json()
     except aiohttp.ClientError as e:
-        logging.error(f"Error fetching Klipper status: {e}")
-        return None
-    except Exception as e:
-        logging.error(f"Unexpected error fetching Klipper status: {e}")
+        print(f"Error fetching Klipper status: {e}")
         return None
 
 async def get_camera_snapshot(session):
@@ -63,10 +60,7 @@ async def get_camera_snapshot(session):
             response.raise_for_status()
             return await response.read()
     except aiohttp.ClientError as e:
-        logging.error(f"Error fetching camera snapshot: {e}")
-        return None
-    except Exception as e:
-        logging.error(f"Unexpected error fetching camera snapshot: {e}")
+        print(f"Error fetching camera snapshot: {e}")
         return None
 
 def rotate_image(image_data):
@@ -77,7 +71,7 @@ def rotate_image(image_data):
         rotated_image.save(output, format='JPEG')
         return output.getvalue()
     except Exception as e:
-        logging.error(f"Error rotating image: {e}")
+        print(f"Error rotating image: {e}")
         return None
 
 async def send_discord_notification(session, title, content, image_data=None):
@@ -116,17 +110,12 @@ async def send_discord_notification(session, title, content, image_data=None):
                         result = await response.json()
                         if 'attachments' in result:
                             data['embeds'][0]['image'] = {'url': result['attachments'][0]['url']}
-                        logging.info(f"Snapshot sent for {title}")
                         return  # Stop here to prevent double posting
 
         async with session.post(DISCORD_WEBHOOK_URL, headers=headers, json=data) as response:
             response.raise_for_status()
-            logging.info(f"Discord notification sent successfully: {title}")
     except aiohttp.ClientError as e:
-        logging.error(f"Error sending Discord notification: {e}")
-    except Exception as e:
-        logging.error(f"Unexpected error sending Discord notification: {e}")
-
+        print(f"Error sending Discord notification: {e}")
 
 def calculate_progress(print_stats):
     global estimated_total_duration, total_layers, current_layer
@@ -205,8 +194,6 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["completed"] = True
             notification_flags["started"] = False
-            notification_flags["cancelled"] = False
-            notification_flags["idle"] = False
 
         elif printer_state == "cancelled" and not notification_flags["cancelled"]:
             # Print cancelled
@@ -219,8 +206,6 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["cancelled"] = True
             notification_flags["started"] = False
-            notification_flags["completed"] = False
-            notification_flags["idle"] = False
 
         elif printer_state == "idle" and not notification_flags["idle"]:
             # Printer idle
@@ -231,8 +216,6 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["idle"] = True
             notification_flags["started"] = False
-            notification_flags["completed"] = False
-            notification_flags["cancelled"] = False
 
     await asyncio.sleep(INTERVAL_SECONDS)
     asyncio.create_task(check_printer_status(session))
@@ -243,9 +226,4 @@ async def main():
         await task
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logging.info("KeyboardInterrupt: Stopping the script...")
-    except Exception as e:
-        logging.error(f"Unexpected error occurred: {e}")
+    asyncio.run(main())
