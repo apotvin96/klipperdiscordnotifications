@@ -4,12 +4,14 @@ import json
 from io import BytesIO
 from PIL import Image
 from datetime import datetime, timezone
+import os
+import logging
 
 ##################################################################################
 # Replace these with your own values
 ##################################################################################
 
-DISCORD_WEBHOOK_URL = "YOUR_WEBHOOK_URL_HERE"
+DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')  # Edit this variable in your .env file
 KLIPPER_STATUS_URL = "http://127.0.0.1/printer/objects/query?webhooks&print_stats"
 CAMERA_SNAPSHOT_URL = "http://127.0.0.1/webcam/?action=snapshot"
 INTERVAL_SECONDS = 30  # Check status every 30 seconds - you shouldn't need to adjust this value
@@ -20,6 +22,12 @@ EMBED_COLOR = 12582656  # Custom yellow-green color (in Discord's decimal format
 FOOTER_TEXT = "3D Printer Notifications"  # Text shown on the footer of the embed
 ROTATE_ANGLE = 180  # Angle to rotate the image, adjust as needed
 ENABLE_SNAPSHOTS = True  # Enable or disable snapshots in notifications
+
+##################################################################################
+# Configure logging
+##################################################################################
+
+logging.basicConfig(level=logging.INFO)  # Adjust level as needed
 
 ##################################################################################
 # No need to modify anything below this section
@@ -44,7 +52,7 @@ async def get_klipper_status(session):
             response.raise_for_status()
             return await response.json()
     except aiohttp.ClientError as e:
-        print(f"Error fetching Klipper status: {e}")
+        logging.error(f"Error fetching Klipper status: {e}")
         return None
 
 async def get_camera_snapshot(session):
@@ -53,7 +61,7 @@ async def get_camera_snapshot(session):
             response.raise_for_status()
             return await response.read()
     except aiohttp.ClientError as e:
-        print(f"Error fetching camera snapshot: {e}")
+        logging.error(f"Error fetching camera snapshot: {e}")
         return None
 
 def rotate_image(image_data):
@@ -64,7 +72,7 @@ def rotate_image(image_data):
         rotated_image.save(output, format='JPEG')
         return output.getvalue()
     except Exception as e:
-        print(f"Error rotating image: {e}")
+        logging.error(f"Error rotating image: {e}")
         return None
 
 async def send_discord_notification(session, title, content, image_data=None):
@@ -103,12 +111,14 @@ async def send_discord_notification(session, title, content, image_data=None):
                         result = await response.json()
                         if 'attachments' in result:
                             data['embeds'][0]['image'] = {'url': result['attachments'][0]['url']}
+                        logging.info(f"Snapshot sent for {title}")
                         return  # Stop here to prevent double posting
 
         async with session.post(DISCORD_WEBHOOK_URL, headers=headers, json=data) as response:
             response.raise_for_status()
+            logging.info(f"Discord notification sent successfully: {title}")
     except aiohttp.ClientError as e:
-        print(f"Error sending Discord notification: {e}")
+        logging.error(f"Error sending Discord notification: {e}")
 
 def calculate_progress(print_stats):
     global estimated_total_duration, total_layers, current_layer
@@ -219,4 +229,9 @@ async def main():
         await task
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logging.info("KeyboardInterrupt: Stopping the script...")
+    except Exception as e:
+        logging.error(f"Unexpected error occurred: {e}")
