@@ -1,6 +1,5 @@
 import aiohttp
 import asyncio
-import json
 from io import BytesIO
 from PIL import Image
 from datetime import datetime, timezone
@@ -11,7 +10,7 @@ import logging
 # Replace these with your own values
 ##################################################################################
 
-DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')  # Edit this variable in your .env file
+DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')  # Example usage with environment variables
 KLIPPER_STATUS_URL = "http://127.0.0.1/printer/objects/query?webhooks&print_stats"
 CAMERA_SNAPSHOT_URL = "http://127.0.0.1/webcam/?action=snapshot"
 INTERVAL_SECONDS = 30  # Check status every 30 seconds - you shouldn't need to adjust this value
@@ -54,6 +53,9 @@ async def get_klipper_status(session):
     except aiohttp.ClientError as e:
         logging.error(f"Error fetching Klipper status: {e}")
         return None
+    except Exception as e:
+        logging.error(f"Unexpected error fetching Klipper status: {e}")
+        return None
 
 async def get_camera_snapshot(session):
     try:
@@ -62,6 +64,9 @@ async def get_camera_snapshot(session):
             return await response.read()
     except aiohttp.ClientError as e:
         logging.error(f"Error fetching camera snapshot: {e}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error fetching camera snapshot: {e}")
         return None
 
 def rotate_image(image_data):
@@ -119,6 +124,8 @@ async def send_discord_notification(session, title, content, image_data=None):
             logging.info(f"Discord notification sent successfully: {title}")
     except aiohttp.ClientError as e:
         logging.error(f"Error sending Discord notification: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error sending Discord notification: {e}")
 
 def calculate_progress(print_stats):
     global estimated_total_duration, total_layers, current_layer
