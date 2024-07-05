@@ -42,3 +42,31 @@ KLIPPER_STATUS_URL = "http://127.0.0.1/printer/objects/query?webhooks&print_stat
 CAMERA_SNAPSHOT_URL = "http://127.0.0.1/webcam/?action=snapshot"
 THUMBNAIL_URL = "https://direct.path.to.thumbnail.png"
 ICON_URL = "https://direct.path.to.icon.png"
+```
+## Usage
+
+Run the script using Python:
+```python
+python discordnotify.py
+```
+The script will start monitoring the printer status and sending notifications to the configured Discord webhook.
+
+## Setting up Klipper for Layer Information
+
+To enable accurate progress updates and layer information in your notifications, follow the steps below to configure Klipper:
+
+1. Modify Klipper Configuration File:
+   Edit your Klipper printer configuration file (typically `printer.cfg`).
+
+2. Enable Progress and Layer Information:
+   Add the following lines to your Klipper configuration file to enable layer progress reporting:
+
+   ```sh
+   [printer]
+   progress_log: true
+   ```
+3. Integrate with Slicer (Mainsail Documentation):
+   Follow the instructions in the [Mainsail Documentation for your slicer](https://docs.mainsail.xyz/overview/slicer) to configure it to send layer         information to klipper.
+
+4. Restart Klipper:
+   After editing the Klipper configuration file and setting up youur slicer integration, restart Klipper for the changes to take effect.
