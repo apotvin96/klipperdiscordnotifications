@@ -127,6 +127,7 @@ async def send_discord_notification(session, title, content, image_data=None):
     except Exception as e:
         logging.error(f"Unexpected error sending Discord notification: {e}")
 
+
 def calculate_progress(print_stats):
     global estimated_total_duration, total_layers, current_layer
 
@@ -204,6 +205,8 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["completed"] = True
             notification_flags["started"] = False
+            notification_flags["cancelled"] = False
+            notification_flags["idle"] = False
 
         elif printer_state == "cancelled" and not notification_flags["cancelled"]:
             # Print cancelled
@@ -216,6 +219,8 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["cancelled"] = True
             notification_flags["started"] = False
+            notification_flags["completed"] = False
+            notification_flags["idle"] = False
 
         elif printer_state == "idle" and not notification_flags["idle"]:
             # Printer idle
@@ -226,6 +231,8 @@ async def check_printer_status(session):
             current_layer = None
             notification_flags["idle"] = True
             notification_flags["started"] = False
+            notification_flags["completed"] = False
+            notification_flags["cancelled"] = False
 
     await asyncio.sleep(INTERVAL_SECONDS)
     asyncio.create_task(check_printer_status(session))
