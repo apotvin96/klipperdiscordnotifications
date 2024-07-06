@@ -153,7 +153,7 @@ def format_filament(filament_used_mm):
     filament_volume_cm3 = filament_used_mm * (FILAMENT_DIAMETER / 2) ** 2 * 3.14159 / 1000
     filament_weight_g = filament_volume_cm3 * FILAMENT_DENSITY
     filament_cost = filament_weight_g * FILAMENT_COST_PER_GRAM
-    return f"{filament_used_m:.2f}m/{filament_weight_g:.2f}g/${filament_cost:.2f}"
+    return f"{filament_used_m:.2f}m | {filament_weight_g:.2f}g | ${filament_cost:.2f}"
 
 async def check_printer_status(session):
     global last_reported_progress, estimated_total_duration, current_print_filename, total_layers, current_layer, notification_flags
@@ -229,7 +229,7 @@ async def check_printer_status(session):
             notification_flags["completed"] = False
             notification_flags["idle"] = False
 
-        elif printer_state == "idle" and not notification_flags["idle"]:
+        elif printer_state == "ready" and not notification_flags["idle"]:
             # Printer idle
             await send_discord_notification(session, "Printer Idle", "The printer is now idle.")
             last_reported_progress = -1
