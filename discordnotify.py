@@ -22,6 +22,9 @@ EMBED_COLOR = 12582656  # Custom yellow-green color (in Discord's decimal format
 FOOTER_TEXT = "3D Printer Notifications"  # Text shown on the footer of the embed
 ROTATE_ANGLE = 180  # Angle to rotate the image, adjust as needed
 ENABLE_SNAPSHOTS = True  # Enable or disable snapshots in notifications
+FILAMENT_DENSITY = 1.24  # Density of filament in g/cm^3, adjust as needed
+FILAMENT_DIAMETER = 1.75  # Diameter of filament in mm, adjust as needed
+FILAMENT_COST_PER_GRAM = 0.10  # Cost of filament per gram in your currency
 
 ##################################################################################
 # Configure logging
@@ -145,6 +148,13 @@ def format_time(seconds):
     hours, mins = divmod(minutes, 60)
     return f"{int(hours)}h {int(mins)}m {int(secs)}s"
 
+def format_filament(filament_used_mm):
+    filament_used_m = filament_used_mm / 1000
+    filament_volume_cm3 = filament_used_mm * (FILAMENT_DIAMETER / 2) ** 2 * 3.14159 / 1000
+    filament_weight_g = filament_volume_cm3 * FILAMENT_DENSITY
+    filament_cost = filament_weight_g * FILAMENT_COST_PER_GRAM
+    return f"{filament_used_m:.2f}m/{filament_weight_g:.2f}g/${filament_cost:.2f}"
+
 async def check_printer_status(session):
     global last_reported_progress, estimated_total_duration, current_print_filename, total_layers, current_layer, notification_flags
     status = await get_klipper_status(session)
@@ -182,9 +192,11 @@ async def check_printer_status(session):
         elif printer_state == "complete" and not notification_flags["completed"]:
             # Print completed
             elapsed_time = print_duration
+            filament_used = float(print_stats.get('filament_used', 0))
+            formatted_filament = format_filament(filament_used)
             content = (f"{current_print_filename} **completed!**\n"
-                       f"**Total Duration:** {print_stats.get('total_duration', 'Unknown')} seconds\n"
-                       f"**Filament Used:** {print_stats.get('filament_used', 'Unknown')} mm\n"
+                       f"**Total Duration:** {format_time(print_stats.get('total_duration', 0))}\n"
+                       f"**Filament Used:** {formatted_filament}\n"
                        f"**Elapsed Time:** {format_time(elapsed_time)}")
             snapshot = await get_camera_snapshot(session) if ENABLE_SNAPSHOTS else None
             await send_discord_notification(session, "Print Completed", content, snapshot)
@@ -200,9 +212,11 @@ async def check_printer_status(session):
         elif printer_state == "cancelled" and not notification_flags["cancelled"]:
             # Print cancelled
             elapsed_time = print_duration
+            filament_used = float(print_stats.get('filament_used', 0))
+            formatted_filament = format_filament(filament_used)
             content = (f"{current_print_filename} **cancelled!**\n"
-                       f"**Total Duration:** {print_stats.get('total_duration', 'Unknown')} seconds\n"
-                       f"**Filament Used:** {print_stats.get('filament_used', 'Unknown')} mm\n"
+                       f"**Total Duration:** {format_time(print_stats.get('total_duration', 0))}\n"
+                       f"**Filament Used:** {formatted_filament}\n"
                        f"**Elapsed Time:** {format_time(elapsed_time)}")
             snapshot = await get_camera_snapshot(session) if ENABLE_SNAPSHOTS else None
             await send_discord_notification(session, "Print Cancelled", content, snapshot)
