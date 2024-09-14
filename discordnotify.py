@@ -18,7 +18,7 @@ DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')  # Example usage with env
 KLIPPER_STATUS_URL = "http://127.0.0.1/printer/objects/query?webhooks&print_stats"
 CAMERA_SNAPSHOT_URL = "http://127.0.0.1/webcam/?action=snapshot"
 INTERVAL_SECONDS = 30  # Check status every 30 seconds - you shouldn't need to adjust this value
-NOTIFICATION_INTERVAL = 10  # Progress updates every 10%, Change as needed
+NOTIFICATION_INTERVAL = 5  # Progress updates every 10%, Change as needed
 THUMBNAIL_URL = "https://vorondesign.com/images/voron_design_logo.png"   # URL to your thumbnail image
 ICON_URL = "https://vorondesign.com/images/voron_design_logo.png"   # URL to your icon image
 EMBED_COLOR = 1752220  # Custom yellow-green color (in Discord's decimal format)
