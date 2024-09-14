@@ -6,7 +6,6 @@ from PIL import Image
 from datetime import datetime, timezone
 import os
 import logging
-
 from dotenv import load_dotenv
 
 load_dotenv()
