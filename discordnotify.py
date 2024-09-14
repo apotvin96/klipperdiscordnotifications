@@ -132,7 +132,7 @@ def calculate_progress(print_stats):
 
     if estimated_total_duration is None:
         estimated_total_duration = print_stats.get('total_duration', 1)
-        print("estimated_total_duration")
+        print(estimated_total_duration)
     
     if total_layers and current_layer:
         print("Calculating based on layers")
