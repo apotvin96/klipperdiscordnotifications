@@ -12,6 +12,9 @@ import logging
 ##################################################################################
 
 DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL')  # Example usage with environment variables
+
+print(DISCORD_WEBHOOK_URL)
+
 KLIPPER_STATUS_URL = "http://127.0.0.1/printer/objects/query?webhooks&print_stats"
 CAMERA_SNAPSHOT_URL = "http://127.0.0.1/webcam/?action=snapshot"
 INTERVAL_SECONDS = 30  # Check status every 30 seconds - you shouldn't need to adjust this value
