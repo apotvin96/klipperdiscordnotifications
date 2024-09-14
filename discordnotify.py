@@ -180,7 +180,7 @@ async def check_printer_status(session):
                 notification_flags["cancelled"] = False
                 notification_flags["idle"] = False
 
-            elif progress_percentage >= last_reported_progress + NOTIFICATION_INTERVAL and progress_percentage < 100:
+            elif progress_percentage >= last_reported_progress + NOTIFICATION_INTERVAL:
                 # Progress update
                 elapsed_time = print_duration
                 content = (f"**Filename:** {current_print_filename}\n"
