@@ -16,15 +16,15 @@ KLIPPER_STATUS_URL = "http://127.0.0.1/printer/objects/query?webhooks&print_stat
 CAMERA_SNAPSHOT_URL = "http://127.0.0.1/webcam/?action=snapshot"
 INTERVAL_SECONDS = 30  # Check status every 30 seconds - you shouldn't need to adjust this value
 NOTIFICATION_INTERVAL = 10  # Progress updates every 10%, Change as needed
-THUMBNAIL_URL = "https://direct.path.to.thumbnail.png"  # URL to your thumbnail image
-ICON_URL = "https://direct.path.to.icon.png"  # URL to your icon image
-EMBED_COLOR = 12582656  # Custom yellow-green color (in Discord's decimal format)
+THUMBNAIL_URL = "https://vorondesign.com/images/voron_design_logo.png"   # URL to your thumbnail image
+ICON_URL = "https://vorondesign.com/images/voron_design_logo.png"   # URL to your icon image
+EMBED_COLOR = 1752220  # Custom yellow-green color (in Discord's decimal format)
 FOOTER_TEXT = "3D Printer Notifications"  # Text shown on the footer of the embed
-ROTATE_ANGLE = 180  # Angle to rotate the image, adjust as needed
+ROTATE_ANGLE = 0  # Angle to rotate the image, adjust as needed
 ENABLE_SNAPSHOTS = True  # Enable or disable snapshots in notifications
 FILAMENT_DENSITY = 1.24  # Density of filament in g/cm^3, adjust as needed
 FILAMENT_DIAMETER = 1.75  # Diameter of filament in mm, adjust as needed
-FILAMENT_COST_PER_GRAM = 0.10  # Cost of filament per gram in your currency
+FILAMENT_COST_PER_GRAM = 0.15  # Cost of filament per gram in your currency
 
 ##################################################################################
 # Configure logging
