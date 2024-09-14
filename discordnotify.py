@@ -131,12 +131,14 @@ def calculate_progress(print_stats):
         estimated_total_duration = print_stats.get('total_duration', 1)
     
     if total_layers and current_layer:
+        print("Calculating based on layers")
         progress_percentage = (current_layer / total_layers) * 100
         estimated_total_duration = (print_duration / progress_percentage) * 100 if progress_percentage > 0 else estimated_total_duration
         remaining_time = max(0, estimated_total_duration - print_duration)
         return progress_percentage, print_duration, remaining_time
     
     if estimated_total_duration > 0:
+        print("Calculating based on durations")
         progress_percentage = (print_duration / estimated_total_duration) * 100
         remaining_time = max(0, estimated_total_duration - print_duration)
         return progress_percentage, print_duration, remaining_time
